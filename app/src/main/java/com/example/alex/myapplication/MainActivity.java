@@ -100,7 +100,7 @@ public class MainActivity extends IOIOActivity {
             case R.id.calibrate:
                 toast("Calibrating meeter to zero");
                 calibrate = raw_voltage;
-                
+
                 return true;
             case R.id.action_settings:
                 toast("settings happened");
@@ -183,7 +183,7 @@ public class MainActivity extends IOIOActivity {
             String pad = "";
             if (voltage < 10 ) pad = "0";
 
-            final String vString = pad + Integer.toString(voltage);
+            final String vString = pad + Integer.toString(progresBarValue);
 
             runOnUiThread(new Runnable() {
                 @Override

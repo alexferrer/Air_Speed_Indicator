@@ -52,8 +52,9 @@
         android:layout_below="@+id/text_units"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="65dp"
-        android:max="60"
-        android:progress="5" />
+        android:max="80"
+        android:progress="5"
+        android:minHeight="40dp" />
 
     <ToggleButton
         android:layout_width="wrap_content"
