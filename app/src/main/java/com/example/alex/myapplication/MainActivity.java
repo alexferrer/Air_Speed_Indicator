@@ -28,6 +28,8 @@ public class MainActivity extends IOIOActivity {
     private float calibrate = 1.66f;
     private float sFactor  = 20.0f;
     private float cFactor  = 1.0f;
+    float raw_voltage = 0;
+
     /* for average airspeed calculation */
     private int   sample_sum = 0;
     private int   sample_count = 0;
@@ -95,8 +97,10 @@ public class MainActivity extends IOIOActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         // Handle presses on the action bar items
         switch (item.getItemId()) {
-            case R.id.action_search:
-                toast("action search happened");
+            case R.id.calibrate:
+                toast("Calibrating meeter to zero");
+                calibrate = raw_voltage;
+                
                 return true;
             case R.id.action_settings:
                 toast("settings happened");
@@ -153,7 +157,7 @@ public class MainActivity extends IOIOActivity {
         public void loop() throws ConnectionLostException, InterruptedException {
             led_.write(!button_.isChecked());
 
-            float raw = pin40_.getVoltage();
+            raw_voltage = pin40_.getVoltage();
 
             /** calculate speed :
              *  read voltage
@@ -161,7 +165,7 @@ public class MainActivity extends IOIOActivity {
              *  convert voltage to KPH with sFactor
              *  convert to MPH if required cFactor*/
 
-            final int voltage   = (int)( (raw - calibrate) * 100 * sFactor * cFactor) ;
+            final int voltage   = (int)( (raw_voltage - calibrate) * 100 * sFactor * cFactor) ;
 
             /* calculate speed sample average
                to reduce bar jitter
