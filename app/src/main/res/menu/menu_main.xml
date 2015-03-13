@@ -12,4 +12,14 @@
         android:orderInCategory="100"
         app:showAsAction="always" />
 
+    <item android:id="@+id/cfactor_up"
+        android:title="cfactor+"
+        android:orderInCategory="100"
+        app:showAsAction="always" />
+
+    <item android:id="@+id/cfactor_down"
+        android:title="cfactor-"
+        android:orderInCategory="100"
+        app:showAsAction="always" />
+
 </menu>

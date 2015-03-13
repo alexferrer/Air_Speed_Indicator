@@ -1,5 +1,6 @@
 package com.example.alex.myapplication;
 
+import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
@@ -30,7 +31,7 @@ public class MainActivity extends IOIOActivity {
 
     /* airspeed indicator adjust to zero */
     private float calibrate = 1.66f;
-    private float sFactor  = 20.0f;
+    private float sFactor  = 15.0f;
     private float cFactor  = 1.0f;
     float raw_voltage = 0;
 
@@ -41,21 +42,26 @@ public class MainActivity extends IOIOActivity {
     private int   sample_avg  = 0;
 
 
+    /* define ui elements   */
     private ToggleButton button_;
     int         speed_unit = MPH;
     TextView    units;
     TextView    speed;
     ProgressBar progressBar;
+    TextView fvoltage_Text;
+    TextView cfactor_Text;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        button_ = (ToggleButton) findViewById(R.id.button);
+        button_     = (ToggleButton) findViewById(R.id.button);
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
-        units= (TextView) findViewById(R.id.text_units);
-        speed= (TextView) findViewById(R.id.text_speed);
+        units       = (TextView) findViewById(R.id.text_units);
+        speed       = (TextView) findViewById(R.id.text_speed);
+        fvoltage_Text = (TextView) findViewById(R.id.voltage);
+        cfactor_Text = (TextView) findViewById(R.id.cFactor);
 
 
         Button button_kph = (Button) findViewById(R.id.button_kph);
@@ -111,6 +117,18 @@ public class MainActivity extends IOIOActivity {
                 showDialog();
 
                 return true;
+
+            case R.id.cfactor_up:
+                toast("sfactor up ");
+                sFactor = sFactor + 2;
+                return true;
+
+            case R.id.cfactor_down:
+                toast("sfactor down ");
+                sFactor = sFactor - 2;
+                return true;
+
+
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -164,6 +182,7 @@ public class MainActivity extends IOIOActivity {
             led_.write(!button_.isChecked());
 
             raw_voltage = pin40_.getVoltage();
+            final String voltage_string = Float.toString(raw_voltage);
 
             /** calculate speed :
              *  read voltage
@@ -184,19 +203,22 @@ public class MainActivity extends IOIOActivity {
                 sample_count = 0;
                 sample_sum = sample_avg;
             }
-            final int progresBarValue = sample_avg;
+            final int avg_speed_value = sample_avg;
 
             String pad = "";
-            if (progresBarValue < 100 ) pad = "0";
-            if (progresBarValue < 10  ) pad = "00";
+            if (avg_speed_value < 100 ) pad = "0";
+            if (avg_speed_value < 10  ) pad = "00";
 
-            final String vString = pad + Integer.toString(progresBarValue);
+            final String speed_string = pad + Integer.toString(avg_speed_value);
+            final String sfactor_string = Integer.toString((int) sFactor)+"x";
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    speed.setText(vString);
-                    progressBar.setProgress(progresBarValue);
+                    speed.setText(speed_string);
+                    progressBar.setProgress(avg_speed_value);
+                    fvoltage_Text.setText(voltage_string);
+                    cfactor_Text.setText(sfactor_string);
                 }
             });
 
@@ -311,11 +333,13 @@ public static class MyAlertDialogFragment extends DialogFragment {
         return frag;
     }
 
+    @TargetApi(21)
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         int title = getArguments().getInt("title");
 
         return new AlertDialog.Builder(getActivity())
+                .setView(R.layout.settings_dialog)
                 .setIcon(R.drawable.search)
                 .setTitle(title)
                 .setPositiveButton(R.string.fire,

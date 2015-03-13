@@ -66,4 +66,22 @@
         android:layout_marginTop="107dp"
         android:enabled="false" />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="0.0v"
+        android:id="@+id/voltage"
+        android:layout_centerVertical="true"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="20x"
+        android:id="@+id/cFactor"
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@+id/button_mph" />
+
 </RelativeLayout>
