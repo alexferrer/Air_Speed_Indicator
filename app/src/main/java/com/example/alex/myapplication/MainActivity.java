@@ -28,6 +28,11 @@ public class MainActivity extends IOIOActivity {
     private float calibrate = 1.66f;
     private float sFactor  = 20.0f;
     private float cFactor  = 1.0f;
+    /* for average airspeed calculation */
+    private int   sample_sum = 0;
+    private int   sample_count = 0;
+    private int   sample_size = 5;
+    private int   sample_avg  = 0;
 
 
     private ToggleButton button_;
@@ -156,9 +161,22 @@ public class MainActivity extends IOIOActivity {
              *  convert voltage to KPH with sFactor
              *  convert to MPH if required cFactor*/
 
-              final int voltage   = (int)( (raw - calibrate) * 100 * sFactor * cFactor) ;
-            String pad = "";
+            final int voltage   = (int)( (raw - calibrate) * 100 * sFactor * cFactor) ;
 
+            /* calculate speed sample average
+               to reduce bar jitter
+             */
+            sample_sum  += voltage;
+            sample_count += 1;
+
+            if (sample_count >= sample_size) {
+                sample_avg = (int) (sample_sum/sample_count);
+                sample_count = 0;
+                sample_sum = sample_avg;
+            }
+            final int progresBarValue = sample_avg;
+
+            String pad = "";
             if (voltage < 10 ) pad = "0";
 
             final String vString = pad + Integer.toString(voltage);
@@ -167,7 +185,7 @@ public class MainActivity extends IOIOActivity {
                 @Override
                 public void run() {
                     speed.setText(vString);
-                    progressBar.setProgress(voltage);
+                    progressBar.setProgress(progresBarValue);
                 }
             });
 
