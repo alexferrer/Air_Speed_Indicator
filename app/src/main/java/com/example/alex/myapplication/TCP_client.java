@@ -1,6 +1,10 @@
 /***
-A helper class to send NMEA sentences to XCSOAR via TCP-IP 
+TCP_client.java
+Author: Alex Ferrer
+Copyright(c) 2015 ferrerdallas@gmail.com Licence: GPL 2.0 or later
 
+A helper class to send NMEA sentences to XCSOAR via TCP-IP 
+*Very draft version..
 
 ***/
 private void runTcpClient() {
