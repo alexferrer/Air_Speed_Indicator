@@ -103,5 +103,5 @@ public class NMEAHelper {
         lxwp0 = "$" + lxwp0 + "*" + cks + "\r\n";
         return lxwp0;
     }
-    
+
 }
