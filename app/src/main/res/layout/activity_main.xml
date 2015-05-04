@@ -79,6 +79,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="~005"
+        android:id="@+id/avgFactor"
+        android:layout_alignBottom="@+id/cFactor"
+        android:layout_alignStart="@+id/text_units" />
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
         android:text="20x"
         android:id="@+id/cFactor"
         android:layout_centerVertical="true"

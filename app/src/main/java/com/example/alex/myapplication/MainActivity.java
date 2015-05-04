@@ -11,6 +11,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -30,8 +31,8 @@ public class MainActivity extends IOIOActivity {
     final int KPH = 1;
 
     /* airspeed indicator adjust to zero */
-    private float calibrate = 1.66f;
-    private float sFactor  = 15.0f;
+    private float calibrate = 1.26f;
+    private float sFactor  = 5.0f;
     private float cFactor  = 1.0f;
     float raw_voltage = 0;
 
@@ -50,6 +51,11 @@ public class MainActivity extends IOIOActivity {
     ProgressBar progressBar;
     TextView fvoltage_Text;
     TextView cfactor_Text;
+    TextView avgfactor_Text;
+
+    //xx
+    final Context context = this;
+    private EditText result;
 
 
     @Override
@@ -62,6 +68,10 @@ public class MainActivity extends IOIOActivity {
         speed       = (TextView) findViewById(R.id.text_speed);
         fvoltage_Text = (TextView) findViewById(R.id.voltage);
         cfactor_Text = (TextView) findViewById(R.id.cFactor);
+        avgfactor_Text = (TextView) findViewById(R.id.avgFactor);
+
+        //xx
+        result = (EditText) findViewById(R.id.editText);
 
 
         Button button_kph = (Button) findViewById(R.id.button_kph);
@@ -126,6 +136,16 @@ public class MainActivity extends IOIOActivity {
             case R.id.cfactor_down:
                 toast("sfactor down ");
                 sFactor = sFactor - 2;
+                return true;
+
+            case R.id.avgfactor_up:
+                toast("avgfactor up ");
+                sample_size = sample_size + 2;
+                return true;
+
+            case R.id.avgfactor_down:
+                toast("avgfactor down ");
+                sample_size = sample_size - 2;
                 return true;
 
 
@@ -211,6 +231,8 @@ public class MainActivity extends IOIOActivity {
 
             final String speed_string = pad + Integer.toString(avg_speed_value);
             final String sfactor_string = Integer.toString((int) sFactor)+"x";
+            final String avgfactor_string = Integer.toString((int) sample_size)+"~";
+
 
             runOnUiThread(new Runnable() {
                 @Override
@@ -219,6 +241,7 @@ public class MainActivity extends IOIOActivity {
                     progressBar.setProgress(avg_speed_value);
                     fvoltage_Text.setText(voltage_string);
                     cfactor_Text.setText(sfactor_string);
+                    avgfactor_Text.setText(avgfactor_string);
                 }
             });
 
@@ -338,6 +361,13 @@ public static class MyAlertDialogFragment extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         int title = getArguments().getInt("title");
 
+        /* /xx
+        LayoutInflater li = LayoutInflater.from(context);
+        View promptsView = li.inflate(R.layout.settings_dialog, null);
+        final EditText userInput = (EditText) promptsView.findViewById(R.id.editText);
+       */
+
+
         return new AlertDialog.Builder(getActivity())
                 .setView(R.layout.settings_dialog)
                 .setIcon(R.drawable.search)
@@ -346,6 +376,8 @@ public static class MyAlertDialogFragment extends DialogFragment {
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int whichButton) {
                                 ((MainActivity)getActivity()).doPositiveClick();
+                                //xx
+                                //result.setText(userInput.getText());
                             }
                         }
                 )

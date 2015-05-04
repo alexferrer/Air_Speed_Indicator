@@ -22,4 +22,16 @@
         android:orderInCategory="100"
         app:showAsAction="always" />
 
+
+    <item android:id="@+id/avgfactor_up"
+        android:title="avgfactor+"
+        android:orderInCategory="100"
+        app:showAsAction="always" />
+
+    <item android:id="@+id/avgfactor_down"
+        android:title="avgfactor-"
+        android:orderInCategory="100"
+        app:showAsAction="always" />
+
+
 </menu>
