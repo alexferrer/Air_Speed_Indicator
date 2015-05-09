@@ -261,7 +261,7 @@ public class MainActivity extends IOIOActivity {
             });
 
             Thread.sleep(100);
-            writeToFile(voltage_string+" , ");
+            logToFile(voltage_string);
             //pin40_.close();
         }
 
@@ -408,15 +408,21 @@ public class MainActivity extends IOIOActivity {
     }
 
     //-------
-//write someting to disk
+
+    private void logToFile(String text) {
+        String ts = String.valueOf(java.lang.System.currentTimeMillis()).substring(5); //milliseconds since midnight
+        writeToFile(ts + " , " + text + System.getProperty("line.separator"));
+    }
+
+    //write someting to disk
     private void writeToFile(String content) {
-    String FILE_NAME = "voltagefile.txt";
+        String FILE_NAME = "voltagefile.txt";
         File file;
         FileOutputStream outputStream;
         try {
-            file = new File(Environment.getExternalStoragePublicDirectory( android.os.Environment.DIRECTORY_DOWNLOADS ), FILE_NAME );
+            file = new File(Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), FILE_NAME);
 
-            outputStream = new FileOutputStream(file,true);
+            outputStream = new FileOutputStream(file, true);
             outputStream.write(content.getBytes());
             outputStream.close();
         } catch (IOException e) {
@@ -424,5 +430,5 @@ public class MainActivity extends IOIOActivity {
         }
 
     }
-
 }
+
