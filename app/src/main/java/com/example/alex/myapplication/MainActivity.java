@@ -62,7 +62,7 @@ public class MainActivity extends IOIOActivity {
     TextView avgfactor_Text;
 
     //xx
-    final Context context = this;
+    //final Context context = this;
     private EditText result;
 
 
@@ -70,6 +70,7 @@ public class MainActivity extends IOIOActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //set an inital log filename.. may not bee needed.
         LOG_FILENAME = "iolog_"+String.valueOf(java.lang.System.currentTimeMillis()).substring(5,10)+".txt";
 
         button_ = (ToggleButton) findViewById(R.id.button);
@@ -92,9 +93,9 @@ public class MainActivity extends IOIOActivity {
                 progressBar.setProgress(30);
                 speed_unit = KPH;
                 cFactor = 1.0f;
-                //TCP on--------------
-                ConnectTask task = new ConnectTask();
-                task.execute();
+                //turn on async task --------------
+                //ConnectTask task = new ConnectTask();
+                //task.execute();
 
             }
         });
@@ -197,7 +198,7 @@ public class MainActivity extends IOIOActivity {
          * Typically used to open pins.
          *
          * @throws ioio.lib.api.exception.ConnectionLostException When IOIO connection is lost.
-         * @see ioio.lib.util.IOIOLooper# setup()
+         *
          */
         @Override
         protected void setup() throws ConnectionLostException {
@@ -218,9 +219,11 @@ public class MainActivity extends IOIOActivity {
         @Override
         public void loop() throws ConnectionLostException, InterruptedException {
             led_.write(!button_.isChecked());
-
             raw_voltage = pin40_.getVoltage();
-            final String voltage_string = Float.toString(raw_voltage);
+
+            String voltageRawString = Float.toString(raw_voltage);
+            //the voltage sensor precision is .003, so trim the last 4 digits of the .01234567 float
+            final String voltage_string = voltageRawString.substring(0,voltageRawString.length()-4);
 
             /** calculate speed :
              *  read voltage
@@ -237,7 +240,7 @@ public class MainActivity extends IOIOActivity {
             sample_count += 1;
 
             if (sample_count >= sample_size) {
-                sample_avg = (int) (sample_sum / sample_count);
+                sample_avg = sample_sum / sample_count;
                 sample_count = 0;
                 sample_sum = sample_avg;
             }
@@ -249,7 +252,7 @@ public class MainActivity extends IOIOActivity {
 
             final String speed_string = pad + Integer.toString(avg_speed_value);
             final String sfactor_string = Integer.toString((int) sFactor) + "x";
-            final String avgfactor_string = Integer.toString((int) sample_size) + "~";
+            final String avgfactor_string = Integer.toString( sample_size) + "~";
 
 
             runOnUiThread(new Runnable() {
@@ -264,7 +267,14 @@ public class MainActivity extends IOIOActivity {
             });
 
             Thread.sleep(100);
-            logToFile(voltage_string);
+
+            if (button_.isChecked()) {
+                logToFile(voltage_string);
+            }
+            else {
+                //keep reset the logging filename until it is needed.. (yes it is ugly.. but simple)
+                LOG_FILENAME = "iolog_"+String.valueOf(java.lang.System.currentTimeMillis()).substring(5,10)+".txt";
+            }
             //pin40_.close();
         }
 
@@ -292,8 +302,6 @@ public class MainActivity extends IOIOActivity {
 
     /**
      * A method to create our IOIO thread.
-     *
-     * @see ioio.lib.util.AbstractIOIOActivity#createIOIOThread()
      */
     @Override
     protected IOIOLooper createIOIOLooper() {
