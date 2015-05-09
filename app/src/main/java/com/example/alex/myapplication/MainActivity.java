@@ -7,6 +7,7 @@ import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -17,6 +18,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 import ioio.lib.api.AnalogInput;
 import ioio.lib.api.DigitalOutput;
 import ioio.lib.api.IOIO;
@@ -26,28 +31,30 @@ import ioio.lib.util.IOIOLooper;
 import ioio.lib.util.android.IOIOActivity;
 
 
+
+
 public class MainActivity extends IOIOActivity {
     final int MPH = 0;
     final int KPH = 1;
 
     /* airspeed indicator adjust to zero */
     private float calibrate = 1.26f;
-    private float sFactor  = 5.0f;
-    private float cFactor  = 1.0f;
+    private float sFactor = 5.0f;
+    private float cFactor = 1.0f;
     float raw_voltage = 0;
 
     /* for average airspeed calculation */
-    private int   sample_sum = 0;
-    private int   sample_count = 0;
-    private int   sample_size = 5;
-    private int   sample_avg  = 0;
+    private int sample_sum = 0;
+    private int sample_count = 0;
+    private int sample_size = 5;
+    private int sample_avg = 0;
 
 
     /* define ui elements   */
     private ToggleButton button_;
-    int         speed_unit = MPH;
-    TextView    units;
-    TextView    speed;
+    int speed_unit = MPH;
+    TextView units;
+    TextView speed;
     ProgressBar progressBar;
     TextView fvoltage_Text;
     TextView cfactor_Text;
@@ -62,10 +69,10 @@ public class MainActivity extends IOIOActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        button_     = (ToggleButton) findViewById(R.id.button);
+        button_ = (ToggleButton) findViewById(R.id.button);
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
-        units       = (TextView) findViewById(R.id.text_units);
-        speed       = (TextView) findViewById(R.id.text_speed);
+        units = (TextView) findViewById(R.id.text_units);
+        speed = (TextView) findViewById(R.id.text_speed);
         fvoltage_Text = (TextView) findViewById(R.id.voltage);
         cfactor_Text = (TextView) findViewById(R.id.cFactor);
         avgfactor_Text = (TextView) findViewById(R.id.avgFactor);
@@ -82,6 +89,9 @@ public class MainActivity extends IOIOActivity {
                 progressBar.setProgress(30);
                 speed_unit = KPH;
                 cFactor = 1.0f;
+                //TCP on--------------
+                ConnectTask task = new ConnectTask();
+                task.execute();
 
             }
         });
@@ -95,12 +105,18 @@ public class MainActivity extends IOIOActivity {
                 progressBar.setProgress(50);
                 speed_unit = MPH;
                 cFactor = 0.6213f;
+                //TCP-----------------
+                /*
+                if(TcpClient.isConnected)
+                {
+                    mTcpClient.stopClient();
+                }
+                */
 
             }
         });
 
     }
-
 
 
     @Override
@@ -163,19 +179,21 @@ public class MainActivity extends IOIOActivity {
      * be called repetitively until the IOIO gets disconnected.
      */
     class Looper extends BaseIOIOLooper {
-        /** The on-board LED. */
+        /**
+         * The on-board LED.
+         */
         private DigitalOutput led_;
 
-        /** The analog input pin 40 */
-        private AnalogInput  pin40_ ;
+        /**
+         * The analog input pin 40
+         */
+        private AnalogInput pin40_;
 
         /**
          * Called every time a connection with IOIO has been established.
          * Typically used to open pins.
          *
-         * @throws ioio.lib.api.exception.ConnectionLostException
-         *             When IOIO connection is lost.
-         *
+         * @throws ioio.lib.api.exception.ConnectionLostException When IOIO connection is lost.
          * @see ioio.lib.util.IOIOLooper# setup()
          */
         @Override
@@ -190,11 +208,8 @@ public class MainActivity extends IOIOActivity {
         /**
          * Called repetitively while the IOIO is connected.
          *
-         * @throws ConnectionLostException
-         *             When IOIO connection is lost.
-         * @throws InterruptedException
-         * 				When the IOIO thread has been interrupted.
-         *
+         * @throws ConnectionLostException When IOIO connection is lost.
+         * @throws InterruptedException    When the IOIO thread has been interrupted.
          * @see ioio.lib.util.IOIOLooper#loop()
          */
         @Override
@@ -210,28 +225,28 @@ public class MainActivity extends IOIOActivity {
              *  convert voltage to KPH with sFactor
              *  convert to MPH if required cFactor*/
 
-            final int voltage   = (int)( (raw_voltage - calibrate) * 100 * sFactor * cFactor) ;
+            final int voltage = (int) ((raw_voltage - calibrate) * 100 * sFactor * cFactor);
 
             /* calculate speed sample average
                to reduce bar jitter
              */
-            sample_sum  += voltage;
+            sample_sum += voltage;
             sample_count += 1;
 
             if (sample_count >= sample_size) {
-                sample_avg = (int) (sample_sum/sample_count);
+                sample_avg = (int) (sample_sum / sample_count);
                 sample_count = 0;
                 sample_sum = sample_avg;
             }
             final int avg_speed_value = sample_avg;
 
             String pad = "";
-            if (avg_speed_value < 100 ) pad = "0";
-            if (avg_speed_value < 10  ) pad = "00";
+            if (avg_speed_value < 100) pad = "0";
+            if (avg_speed_value < 10) pad = "00";
 
             final String speed_string = pad + Integer.toString(avg_speed_value);
-            final String sfactor_string = Integer.toString((int) sFactor)+"x";
-            final String avgfactor_string = Integer.toString((int) sample_size)+"~";
+            final String sfactor_string = Integer.toString((int) sFactor) + "x";
+            final String avgfactor_string = Integer.toString((int) sample_size) + "~";
 
 
             runOnUiThread(new Runnable() {
@@ -246,6 +261,7 @@ public class MainActivity extends IOIOActivity {
             });
 
             Thread.sleep(100);
+            writeToFile(voltage_string+" , ");
             //pin40_.close();
         }
 
@@ -327,12 +343,12 @@ public class MainActivity extends IOIOActivity {
     }
 
 
-//-------
-void showDialog() {
-    DialogFragment newFragment = MyAlertDialogFragment.newInstance(
-            R.string.hello_world);
-    newFragment.show(getFragmentManager(), "dialog");
-}
+    //-------
+    void showDialog() {
+        DialogFragment newFragment = MyAlertDialogFragment.newInstance(
+                R.string.hello_world);
+        newFragment.show(getFragmentManager(), "dialog");
+    }
 
     public void doPositiveClick() {
         // Do stuff here.
@@ -345,21 +361,20 @@ void showDialog() {
     }
 
 
+    public static class MyAlertDialogFragment extends DialogFragment {
 
-public static class MyAlertDialogFragment extends DialogFragment {
+        public static MyAlertDialogFragment newInstance(int title) {
+            MyAlertDialogFragment frag = new MyAlertDialogFragment();
+            Bundle args = new Bundle();
+            args.putInt("title", title);
+            frag.setArguments(args);
+            return frag;
+        }
 
-    public static MyAlertDialogFragment newInstance(int title) {
-        MyAlertDialogFragment frag = new MyAlertDialogFragment();
-        Bundle args = new Bundle();
-        args.putInt("title", title);
-        frag.setArguments(args);
-        return frag;
-    }
-
-    @TargetApi(21)
-    @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
-        int title = getArguments().getInt("title");
+        @TargetApi(21)
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            int title = getArguments().getInt("title");
 
         /* /xx
         LayoutInflater li = LayoutInflater.from(context);
@@ -368,31 +383,46 @@ public static class MyAlertDialogFragment extends DialogFragment {
        */
 
 
-        return new AlertDialog.Builder(getActivity())
-                .setView(R.layout.settings_dialog)
-                .setIcon(R.drawable.search)
-                .setTitle(title)
-                .setPositiveButton(R.string.fire,
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int whichButton) {
-                                ((MainActivity)getActivity()).doPositiveClick();
-                                //xx
-                                //result.setText(userInput.getText());
+            return new AlertDialog.Builder(getActivity())
+                    .setView(R.layout.settings_dialog)
+                    .setIcon(R.drawable.search)
+                    .setTitle(title)
+                    .setPositiveButton(R.string.fire,
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int whichButton) {
+                                    ((MainActivity) getActivity()).doPositiveClick();
+                                    //xx
+                                    //result.setText(userInput.getText());
+                                }
                             }
-                        }
-                )
-                .setNegativeButton(R.string.cancel,
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int whichButton) {
-                                ((MainActivity)getActivity()).doNegativeClick();
+                    )
+                    .setNegativeButton(R.string.cancel,
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int whichButton) {
+                                    ((MainActivity) getActivity()).doNegativeClick();
+                                }
                             }
-                        }
-                )
-                .create();
+                    )
+                    .create();
+        }
     }
-}
 
-//-------
+    //-------
+//write someting to disk
+    private void writeToFile(String content) {
+    String FILE_NAME = "voltagefile.txt";
+        File file;
+        FileOutputStream outputStream;
+        try {
+            file = new File(Environment.getExternalStoragePublicDirectory( android.os.Environment.DIRECTORY_DOWNLOADS ), FILE_NAME );
 
+            outputStream = new FileOutputStream(file,true);
+            outputStream.write(content.getBytes());
+            outputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
 
 }
