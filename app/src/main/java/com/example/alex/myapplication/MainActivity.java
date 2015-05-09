@@ -34,6 +34,7 @@ import ioio.lib.util.android.IOIOActivity;
 
 
 public class MainActivity extends IOIOActivity {
+    private String LOG_FILENAME ;
     final int MPH = 0;
     final int KPH = 1;
 
@@ -69,6 +70,8 @@ public class MainActivity extends IOIOActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        LOG_FILENAME = "iolog_"+String.valueOf(java.lang.System.currentTimeMillis()).substring(5,10)+".txt";
+
         button_ = (ToggleButton) findViewById(R.id.button);
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
         units = (TextView) findViewById(R.id.text_units);
@@ -416,11 +419,10 @@ public class MainActivity extends IOIOActivity {
 
     //write someting to disk
     private void writeToFile(String content) {
-        String FILE_NAME = "voltagefile.txt";
         File file;
         FileOutputStream outputStream;
         try {
-            file = new File(Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), FILE_NAME);
+            file = new File(Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), LOG_FILENAME);
 
             outputStream = new FileOutputStream(file, true);
             outputStream.write(content.getBytes());
