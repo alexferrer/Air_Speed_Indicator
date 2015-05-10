@@ -6,6 +6,10 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.Menu;
@@ -65,13 +69,21 @@ public class MainActivity extends IOIOActivity {
     //final Context context = this;
     private EditText result;
 
+    //define barometric sensor
+    private SensorManager mSensorManager = null;
+    private String barometric_altitude = "";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         //set an inital log filename.. may not bee needed.
         LOG_FILENAME = "iolog_"+String.valueOf(java.lang.System.currentTimeMillis()).substring(5,10)+".txt";
+
+        //get barometric sensor instance.
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
         button_ = (ToggleButton) findViewById(R.id.button);
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
@@ -96,6 +108,7 @@ public class MainActivity extends IOIOActivity {
                 //turn on async task --------------
                 //ConnectTask task = new ConnectTask();
                 //task.execute();
+
 
             }
         });
@@ -223,7 +236,10 @@ public class MainActivity extends IOIOActivity {
 
             String voltageRawString = Float.toString(raw_voltage);
             //the voltage sensor precision is .003, so trim the last 4 digits of the .01234567 float
-            final String voltage_string = voltageRawString.substring(0,voltageRawString.length()-4);
+            if (voltageRawString.length()> 5 ) {
+                voltageRawString = voltageRawString.substring(0, voltageRawString.length() - 4);
+            }
+            final String voltage_string = voltageRawString;
 
             /** calculate speed :
              *  read voltage
@@ -269,7 +285,7 @@ public class MainActivity extends IOIOActivity {
             Thread.sleep(100);
 
             if (button_.isChecked()) {
-                logToFile(voltage_string);
+                logToFile(voltage_string,barometric_altitude);
             }
             else {
                 //keep reset the logging filename until it is needed.. (yes it is ugly.. but simple)
@@ -341,10 +357,14 @@ public class MainActivity extends IOIOActivity {
                 if (enable) {
                     if (numConnected_++ == 0) {
                         button_.setEnabled(true);
+                        mSensorManager.registerListener(mSensorListener, mSensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE), SensorManager.SENSOR_DELAY_NORMAL);
+
                     }
                 } else {
                     if (--numConnected_ == 0) {
                         button_.setEnabled(false);
+                        mSensorManager.unregisterListener(mSensorListener);
+
                     }
                 }
             }
@@ -420,9 +440,15 @@ public class MainActivity extends IOIOActivity {
 
     //-------
 
-    private void logToFile(String text) {
-        String ts = String.valueOf(java.lang.System.currentTimeMillis()).substring(5); //milliseconds since midnight
-        writeToFile(ts + " , " + text + System.getProperty("line.separator"));
+    private void logToFile(String... text) {
+        // Start with current timestamp
+        String outtext = String.valueOf(java.lang.System.currentTimeMillis()).substring(5); //milliseconds since midnight
+        //concatenate all the log values sent on text separated by ","
+        for (String s: text){
+            outtext+= " , " + s;
+        }
+
+        writeToFile(outtext + System.getProperty("line.separator") );
     }
 
     //write someting to disk
@@ -440,5 +466,30 @@ public class MainActivity extends IOIOActivity {
         }
 
     }
-}
+
+    private SensorEventListener mSensorListener = new SensorEventListener() {
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+            // when accuracy changed, this method will be called.
+        }
+
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            // when pressure value is changed, this method will be called.
+            float pressure_value = 0.0f;
+            float height = 0.0f;
+
+            // if you use this listener as listener of only one sensor (ex, Pressure), then you don't need to check sensor type.
+            if (Sensor.TYPE_PRESSURE == event.sensor.getType()) {
+                pressure_value = event.values[0];
+                height = SensorManager.getAltitude(SensorManager.PRESSURE_STANDARD_ATMOSPHERE, pressure_value);
+                barometric_altitude = String.valueOf(height);
+            }
+        }
+    };
+
+
+
+    }
 
