@@ -49,13 +49,13 @@ public class MainActivity extends IOIOActivity {
     private float calibrate = 1.26f;
     private float sFactor = 5.0f;
     private float cFactor = 1.0f;
-    float raw_voltage = 0;
+    private float raw_voltage = 0;
 
     /* for average airspeed calculation */
-    private int sample_sum = 0;
+    private float sample_sum = 0.0f;
     private int sample_count = 0;
-    private int sample_size = 5;
-    private int sample_avg = 0;
+    private int sample_size = 10;
+    private float avg_voltage = 0.0f;
 
 
     /* define ui elements   */
@@ -245,35 +245,34 @@ public class MainActivity extends IOIOActivity {
         @Override
         public void loop() throws ConnectionLostException, InterruptedException {
             led_.write(!button_.isChecked());
+
+            //gat AIS voltage from sensor
             raw_voltage = pin40_.getVoltage();
 
-            String voltageRawString = Float.toString(raw_voltage);
-            //the voltage sensor precision is .003, so trim the last 4 digits of the .01234567 float
-            if (voltageRawString.length()> 5 ) {
-                voltageRawString = voltageRawString.substring(0, voltageRawString.length() - 4);
+            //simple low pass filter by averaging x count samples.
+            sample_sum += raw_voltage;
+            sample_count += 1;
+
+            if (sample_count >= sample_size) {
+                avg_voltage = sample_sum / sample_count;
+                sample_count = 0;
+                sample_sum = 0;
             }
-            final String voltage_string = voltageRawString;
+
+
+            String avgVoltageString = Float.toString(avg_voltage);
+            //the voltage sensor precision is .003, so trim the last 4 digits of the .01234567 float
+            if (avgVoltageString.length()> 5 ) {
+                avgVoltageString = avgVoltageString.substring(0, avgVoltageString.length() - 4);
+            }
+            final String voltage_string = avgVoltageString;
 
             /** calculate speed :
-             *  read voltage
              *  susbtract baseline voltage
              *  convert voltage to KPH with sFactor
              *  convert to MPH if required cFactor*/
 
-            final int voltage = (int) ((raw_voltage - calibrate) * 100 * sFactor * cFactor);
-
-            /* calculate speed sample average
-               to reduce bar jitter
-             */
-            sample_sum += voltage;
-            sample_count += 1;
-
-            if (sample_count >= sample_size) {
-                sample_avg = sample_sum / sample_count;
-                sample_count = 0;
-                sample_sum = sample_avg;
-            }
-            final int avg_speed_value = sample_avg;
+            final int avg_speed_value = (int) ((avg_voltage - calibrate) * 100 * sFactor * cFactor);
 
             String pad = "";
             if (avg_speed_value < 100) pad = "0";
@@ -291,14 +290,16 @@ public class MainActivity extends IOIOActivity {
                     progressBar.setProgress(avg_speed_value);
                     fvoltage_Text.setText(voltage_string);
                     cfactor_Text.setText(sfactor_string);
-                    avgfactor_Text.setText(avgfactor_string+" /"+gpsSpeed);
+                    avgfactor_Text.setText(avgfactor_string + " /" + gpsSpeed);
                 }
             });
 
-            Thread.sleep(333);
+            Thread.sleep(200);
 
-            if (button_.isChecked()) {
-                logToFile(voltage_string,barometric_altitude,gpsSpeed);
+            if (button_.isChecked() ) {
+                if (sample_count == 0)  {
+                           logToFile(barometric_altitude,voltage_string,gpsSpeed); //log only when averages are done
+                         }
             }
             else {
                 //keep reset the logging filename until it is needed.. (yes it is ugly.. but simple)
