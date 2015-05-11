@@ -10,6 +10,9 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.Menu;
@@ -73,6 +76,9 @@ public class MainActivity extends IOIOActivity {
     private SensorManager mSensorManager = null;
     private String barometric_altitude = "";
 
+    // define location manager (gps)
+    LocationManager locationManager = null;
+    private String gpsSpeed = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,8 +88,15 @@ public class MainActivity extends IOIOActivity {
         //set an inital log filename.. may not bee needed.
         LOG_FILENAME = "iolog_"+String.valueOf(java.lang.System.currentTimeMillis()).substring(5,10)+".txt";
 
-        //get barometric sensor instance.
+        //get sensor manager instance. (for barometer)
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        //for gps
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
+
+
+
+
 
         button_ = (ToggleButton) findViewById(R.id.button);
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
@@ -278,14 +291,14 @@ public class MainActivity extends IOIOActivity {
                     progressBar.setProgress(avg_speed_value);
                     fvoltage_Text.setText(voltage_string);
                     cfactor_Text.setText(sfactor_string);
-                    avgfactor_Text.setText(avgfactor_string);
+                    avgfactor_Text.setText(avgfactor_string+" /"+gpsSpeed);
                 }
             });
 
-            Thread.sleep(100);
+            Thread.sleep(333);
 
             if (button_.isChecked()) {
-                logToFile(voltage_string,barometric_altitude);
+                logToFile(voltage_string,barometric_altitude,gpsSpeed);
             }
             else {
                 //keep reset the logging filename until it is needed.. (yes it is ugly.. but simple)
@@ -489,7 +502,31 @@ public class MainActivity extends IOIOActivity {
         }
     };
 
+    private LocationListener mLocationListener = new LocationListener(){
+        @Override
+        public void onLocationChanged(Location location) {
+            location.getLatitude();
+            gpsSpeed = String.valueOf(location.getSpeed());
+
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
 
 
-    }
+    };
+
+}
 
