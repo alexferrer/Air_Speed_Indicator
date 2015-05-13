@@ -15,6 +15,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -46,7 +47,7 @@ public class MainActivity extends IOIOActivity {
     final int KPH = 1;
 
     /* airspeed indicator adjust to zero */
-    private float calibrate = 1.26f;
+    private float calibrate = 1.68f;
     private float sFactor = 5.0f;
     private float cFactor = 1.0f;
     private float raw_voltage = 0;
@@ -54,7 +55,7 @@ public class MainActivity extends IOIOActivity {
     /* for average airspeed calculation */
     private float sample_sum = 0.0f;
     private int sample_count = 0;
-    private int sample_size = 10;
+    private int sample_size = 3;
     private float avg_voltage = 0.0f;
 
 
@@ -268,15 +269,21 @@ public class MainActivity extends IOIOActivity {
             final String voltage_string = avgVoltageString;
 
             /** calculate speed :
-             *  susbtract baseline voltage
-             *  convert voltage to KPH with sFactor
-             *  convert to MPH if required cFactor*/
+             *  convert voltage to pascals
+             *  convert pascals to m/s
+             */
 
-            final int avg_speed_value = (int) ((avg_voltage - calibrate) * 100 * sFactor * cFactor);
+            final int avg_speed_value = (int) mpsToKph(pressureToAirspeed(voltsToPressure(avg_voltage)));
+            Log.i("avgSpeed", " volts" + avg_voltage);
+            Log.i("avgSpeed", " voltsToPressure" + voltsToPressure(avg_voltage));
+            Log.i("avgSpeed", " PressureToAirspeed" + pressureToAirspeed(voltsToPressure(avg_voltage)));
+            Log.i("avgSpeed", " #" + avg_speed_value);
+
 
             String pad = "";
             if (avg_speed_value < 100) pad = "0";
-            if (avg_speed_value < 10) pad = "00";
+            if (avg_speed_value < 10)  pad = "00";
+            if (avg_speed_value < 0)   pad = "";
 
             final String speed_string = pad + Integer.toString(avg_speed_value);
             final String sfactor_string = Integer.toString((int) sFactor) + "x";
@@ -528,6 +535,31 @@ public class MainActivity extends IOIOActivity {
 
 
     };
+
+    /* MPXV7002 signal (volts) to kPa (KiloPascals
+     * As per IC datasheet
+     * assuming a 2/3 resistor bridge to cap max voltage to 3.3v
+     * return value in pascals
+
+       */
+    private double voltsToPressure(float volts){
+
+           return 1.5 * (volts - calibrate) *1000;
+       }
+
+    /* Convert Pascals to airspeed in m/s
+
+    */
+    private double pressureToAirspeed(double pressure){
+          final double AIR_DENSITY_SEA_LEVEL = 1.255;
+          return Math.sqrt( (2*pressure)/ AIR_DENSITY_SEA_LEVEL);
+
+      }
+
+    /* meters per second to kilomentesr per hour */
+    private double mpsToKph(double mps) {
+        return mps * 3.6 ;
+    }
 
 }
 
