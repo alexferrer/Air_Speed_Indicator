@@ -45,11 +45,11 @@ public class MainActivity extends IOIOActivity {
     final int MPH = 0;
     final int KPH = 1;
 
-    /* airspeed indicator adjust to zero */
-    private float calibrate = 1.68f;
-    private float sFactor = 5.0f;
-    private float cFactor = 1.0f;
-    private float raw_voltage = 0;
+
+    private float  calibrate = 1.68f; // airspeed indicator adjust to zero
+    //private float  sFactor = 5.0f;
+    private double cFactor = 1.0f;    //multiplier for kph to mph
+    private float  raw_voltage = 0;
 
     /* for average airspeed calculation */
     private float sample_sum = 0.0f;
@@ -96,7 +96,6 @@ public class MainActivity extends IOIOActivity {
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
 
 
-
         button_ = (ToggleButton) findViewById(R.id.button);
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
         units = (TextView) findViewById(R.id.text_units);
@@ -104,9 +103,6 @@ public class MainActivity extends IOIOActivity {
         fvoltage_Text = (TextView) findViewById(R.id.voltage);
         cfactor_Text = (TextView) findViewById(R.id.cFactor);
         avgfactor_Text = (TextView) findViewById(R.id.avgFactor);
-
-        //xx
-        result = (EditText) findViewById(R.id.editText);
 
 
         Button button_kph = (Button) findViewById(R.id.button_kph);
@@ -116,7 +112,7 @@ public class MainActivity extends IOIOActivity {
                 speed.setText("000");
                 progressBar.setProgress(30);
                 speed_unit = KPH;
-                cFactor = 1.0f;
+                cFactor = 1.0;
                 //turn on async task --------------
                 //ConnectTask task = new ConnectTask();
                 //task.execute();
@@ -133,7 +129,7 @@ public class MainActivity extends IOIOActivity {
                 speed.setText("555");
                 progressBar.setProgress(50);
                 speed_unit = MPH;
-                cFactor = 0.6213f;
+                cFactor = 0.6213;
             }
         });
 
@@ -163,16 +159,6 @@ public class MainActivity extends IOIOActivity {
                 toast("settings happened");
                 showDialog();
 
-                return true;
-
-            case R.id.cfactor_up:
-                toast("sfactor up ");
-                sFactor = sFactor + 2;
-                return true;
-
-            case R.id.cfactor_down:
-                toast("sfactor down ");
-                sFactor = sFactor - 2;
                 return true;
 
             case R.id.avgfactor_up:
@@ -263,7 +249,9 @@ public class MainActivity extends IOIOActivity {
              *  convert pascals to speed in m/s
              */
 
-            final int avg_speed_value = (int) mpsToKph(pressureToAirspeed(voltsToPressure(avg_voltage)));
+            final int avg_speed_value;
+            avg_speed_value = (int) (cFactor * mpsToKph(pressureToAirspeed(voltsToPressure(avg_voltage))));
+
 //            Log.i("avgSpeed", " volts" + avg_voltage);
 //            Log.i("avgSpeed", " voltsToPressure" + voltsToPressure(avg_voltage));
 //            Log.i("avgSpeed", " PressureToAirspeed" + pressureToAirspeed(voltsToPressure(avg_voltage)));
@@ -276,7 +264,6 @@ public class MainActivity extends IOIOActivity {
             if (avg_speed_value < 0)   pad = "";
 
             final String speed_string = pad + Integer.toString(avg_speed_value);
-            final String sfactor_string = Integer.toString((int) sFactor) + "x";
             final String avgfactor_string = Integer.toString( sample_size) + "~";
 
 
@@ -287,7 +274,7 @@ public class MainActivity extends IOIOActivity {
                     progressBar.setProgress(avg_speed_value);
                     fvoltage_Text.setText(voltage_string);
                     avgfactor_Text.setText(avgfactor_string + " /" + sOrientation);
-                    cfactor_Text.setText("v"+gpsSpeed);
+                    cfactor_Text.setText(gpsSpeed);
 
                 }
             });
@@ -521,7 +508,7 @@ public class MainActivity extends IOIOActivity {
                     if (degrees < 0) {
                         degrees = 360 + degrees;
                     }
-                    //meke a string to the closest 5 degrees
+                    //make a string to the closest 5 degrees
                     sOrientation = String.valueOf(degrees/5*5);
                 }
             }
@@ -533,7 +520,7 @@ public class MainActivity extends IOIOActivity {
         @Override
         public void onLocationChanged(Location location) {
             location.getLatitude();
-            gpsSpeed = String.valueOf(location.getSpeed());
+            gpsSpeed = String.valueOf(((int) ( mpsToKph(location.getSpeed())*cFactor) ));
 
         }
 
@@ -575,7 +562,7 @@ public class MainActivity extends IOIOActivity {
 
       }
 
-    /* meters per second to kilomentesr per hour */
+    /* meters per second to kilometers per hour */
     private double mpsToKph(double mps) {
         return mps * 3.6 ;
     }
