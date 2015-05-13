@@ -15,7 +15,6 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Environment;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -269,7 +268,7 @@ public class MainActivity extends IOIOActivity {
 //            Log.i("avgSpeed", " voltsToPressure" + voltsToPressure(avg_voltage));
 //            Log.i("avgSpeed", " PressureToAirspeed" + pressureToAirspeed(voltsToPressure(avg_voltage)));
 //            Log.i("avgSpeed", " #" + avg_speed_value);
-              Log.i("orientation", " #" + sOrientation);
+//            Log.i("orientation", " #" + sOrientation);
 
             String pad = "";
             if (avg_speed_value < 100) pad = "0";
@@ -288,17 +287,17 @@ public class MainActivity extends IOIOActivity {
                     progressBar.setProgress(avg_speed_value);
                     fvoltage_Text.setText(voltage_string);
                     avgfactor_Text.setText(avgfactor_string + " /" + sOrientation);
-                    cfactor_Text.setText(gpsSpeed);
+                    cfactor_Text.setText("v"+gpsSpeed);
 
                 }
             });
 
-            Thread.sleep(200);
+            Thread.sleep(100);
 
             if (button_.isChecked() ) {
                 if (sample_count == 0)  {
-                           logToFile(barometric_altitude,voltage_string,gpsSpeed); //log only when averages are done
-                         }
+                    logToFile(barometric_altitude,voltage_string,gpsSpeed,sOrientation); //log only when averages are done
+                }
             }
             else {
                 //keep reset the logging filename until it is needed.. (yes it is ugly.. but simple)
@@ -495,8 +494,8 @@ public class MainActivity extends IOIOActivity {
         @Override
         public void onSensorChanged(SensorEvent event) {
             // when pressure value is changed, this method will be called.
-            float pressure_value = 0.0f;
-            float height = 0.0f;
+            float pressure_value ;
+            float height ;
 
             // if you use this listener as listener of only one sensor (ex, Pressure), then you don't need to check sensor type.
             if (Sensor.TYPE_PRESSURE == event.sensor.getType()) {
