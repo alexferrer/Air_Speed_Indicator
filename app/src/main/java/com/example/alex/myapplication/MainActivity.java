@@ -73,9 +73,10 @@ public class MainActivity extends IOIOActivity {
     //final Context context = this;
     private EditText result;
 
-    //define barometric sensor
+    //define barometric,magnetic sensos
     private SensorManager mSensorManager = null;
     private String barometric_altitude = "";
+    private String sOrientation = "";
 
     // define location manager (gps)
     LocationManager locationManager = null;
@@ -94,8 +95,6 @@ public class MainActivity extends IOIOActivity {
         //for gps
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
-
-
 
 
 
@@ -136,14 +135,6 @@ public class MainActivity extends IOIOActivity {
                 progressBar.setProgress(50);
                 speed_unit = MPH;
                 cFactor = 0.6213f;
-                //TCP-----------------
-                /*
-                if(TcpClient.isConnected)
-                {
-                    mTcpClient.stopClient();
-                }
-                */
-
             }
         });
 
@@ -165,7 +156,7 @@ public class MainActivity extends IOIOActivity {
         // Handle presses on the action bar items
         switch (item.getItemId()) {
             case R.id.calibrate:
-                toast("Calibrating meeter to zero");
+                toast("Calibrating meter to zero");
                 calibrate = raw_voltage;
 
                 return true;
@@ -247,7 +238,7 @@ public class MainActivity extends IOIOActivity {
         public void loop() throws ConnectionLostException, InterruptedException {
             led_.write(!button_.isChecked());
 
-            //gat AIS voltage from sensor
+            //get voltage from pressure sensor
             raw_voltage = pin40_.getVoltage();
 
             //simple low pass filter by averaging x count samples.
@@ -269,16 +260,16 @@ public class MainActivity extends IOIOActivity {
             final String voltage_string = avgVoltageString;
 
             /** calculate speed :
-             *  convert voltage to pascals
-             *  convert pascals to m/s
+             *  convert voltage to pressure in pascals
+             *  convert pascals to speed in m/s
              */
 
             final int avg_speed_value = (int) mpsToKph(pressureToAirspeed(voltsToPressure(avg_voltage)));
-            Log.i("avgSpeed", " volts" + avg_voltage);
-            Log.i("avgSpeed", " voltsToPressure" + voltsToPressure(avg_voltage));
-            Log.i("avgSpeed", " PressureToAirspeed" + pressureToAirspeed(voltsToPressure(avg_voltage)));
-            Log.i("avgSpeed", " #" + avg_speed_value);
-
+//            Log.i("avgSpeed", " volts" + avg_voltage);
+//            Log.i("avgSpeed", " voltsToPressure" + voltsToPressure(avg_voltage));
+//            Log.i("avgSpeed", " PressureToAirspeed" + pressureToAirspeed(voltsToPressure(avg_voltage)));
+//            Log.i("avgSpeed", " #" + avg_speed_value);
+              Log.i("orientation", " #" + sOrientation);
 
             String pad = "";
             if (avg_speed_value < 100) pad = "0";
@@ -296,8 +287,9 @@ public class MainActivity extends IOIOActivity {
                     speed.setText(speed_string);
                     progressBar.setProgress(avg_speed_value);
                     fvoltage_Text.setText(voltage_string);
-                    cfactor_Text.setText(sfactor_string);
-                    avgfactor_Text.setText(avgfactor_string + " /" + gpsSpeed);
+                    avgfactor_Text.setText(avgfactor_string + " /" + sOrientation);
+                    cfactor_Text.setText(gpsSpeed);
+
                 }
             });
 
@@ -379,6 +371,8 @@ public class MainActivity extends IOIOActivity {
                     if (numConnected_++ == 0) {
                         button_.setEnabled(true);
                         mSensorManager.registerListener(mSensorListener, mSensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE), SensorManager.SENSOR_DELAY_NORMAL);
+                        mSensorManager.registerListener(mSensorListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_UI);
+                        mSensorManager.registerListener(mSensorListener, mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_UI);
 
                     }
                 } else {
@@ -495,6 +489,9 @@ public class MainActivity extends IOIOActivity {
             // when accuracy changed, this method will be called.
         }
 
+
+        float[] mGravity;
+        float[] mGeomagnetic;
         @Override
         public void onSensorChanged(SensorEvent event) {
             // when pressure value is changed, this method will be called.
@@ -507,6 +504,29 @@ public class MainActivity extends IOIOActivity {
                 height = SensorManager.getAltitude(SensorManager.PRESSURE_STANDARD_ATMOSPHERE, pressure_value);
                 barometric_altitude = String.valueOf(height);
             }
+            if (Sensor.TYPE_ACCELEROMETER == event.sensor.getType()) {
+                mGravity = event.values;
+            }
+            if (Sensor.TYPE_MAGNETIC_FIELD == event.sensor.getType()) {
+                mGeomagnetic = event.values;
+            }
+            if (mGravity != null && mGeomagnetic != null) {
+                float R[] = new float[9];
+                float I[] = new float[9];
+                boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
+                if (success) {
+                    float orientation[] = new float[3];
+                    SensorManager.getOrientation(R, orientation);
+                    float azimuth = orientation[0]; // orientation contains: azimut, pitch and roll
+                    int degrees = Math.round(azimuth*360/(2*3.14159f));
+                    if (degrees < 0) {
+                        degrees = 360 + degrees;
+                    }
+                    //meke a string to the closest 5 degrees
+                    sOrientation = String.valueOf(degrees/5*5);
+                }
+            }
+
         }
     };
 
