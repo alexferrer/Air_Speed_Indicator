@@ -224,7 +224,10 @@ public class MainActivity extends IOIOActivity {
             led_.write(!button_.isChecked());
 
             //get voltage from pressure sensor
-            raw_voltage = pin40_.getVoltage();
+            //raw_voltage = pin40_.getVoltage();
+
+            //todo: truncate to 1 decimal place.. the rest is noise!
+            raw_voltage = (float) (Math.round(pin40_.getVoltage()*10)) * 0.1 ;
 
             //simple low pass filter by averaging x count samples.
             sample_sum += raw_voltage;
